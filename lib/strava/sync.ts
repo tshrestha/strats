@@ -1,9 +1,9 @@
 import "server-only";
 
 import { getServiceRoleClient } from "../supabase";
+import { getConnectionKey } from "../visitor";
 import { listAthleteActivitiesPage, type SummaryActivity } from "./api";
 
-const CONNECTION_KEY = "default";
 const PER_PAGE = 200;
 const MAX_PAGES = 5;
 
@@ -40,6 +40,7 @@ function toRow(src: SummaryActivity): CacheRowInput {
 }
 
 export async function syncActivities(): Promise<{ count: number; syncedAt: string }> {
+  const connectionKey = await getConnectionKey();
   const collected: SummaryActivity[] = [];
   for (let page = 1; page <= MAX_PAGES; page++) {
     const batch = await listAthleteActivitiesPage({ page, per_page: PER_PAGE });
@@ -54,7 +55,7 @@ export async function syncActivities(): Promise<{ count: number; syncedAt: strin
   // The Supabase JS client doesn't expose multi-statement transactions, so this
   // RPC is how we keep the cache from being observed half-populated.
   const { error } = await supabase.rpc("replace_strava_activities", {
-    p_connection_key: CONNECTION_KEY,
+    p_connection_key: connectionKey,
     p_rows: rows,
   });
   if (error) {
@@ -65,11 +66,12 @@ export async function syncActivities(): Promise<{ count: number; syncedAt: strin
 }
 
 export async function getLastSyncedAt(): Promise<string | null> {
+  const connectionKey = await getConnectionKey();
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
     .from("strava_activities")
     .select("synced_at")
-    .eq("connection_key", CONNECTION_KEY)
+    .eq("connection_key", connectionKey)
     .order("synced_at", { ascending: false })
     .limit(1)
     .maybeSingle();

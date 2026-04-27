@@ -1,9 +1,8 @@
 import "server-only";
 
 import { getServiceRoleClient } from "../supabase";
+import { getConnectionKey } from "../visitor";
 import type { SummaryActivity } from "./api";
-
-const CONNECTION_KEY = "default";
 
 export const ALLOWED_COLUMNS = [
   "name",
@@ -139,11 +138,12 @@ export async function queryActivities(
   filters: Filters,
   pagination: Pagination,
 ): Promise<{ rows: ActivityRow[]; totalCount: number }> {
+  const connectionKey = await getConnectionKey();
   const supabase = getServiceRoleClient();
   let q = supabase
     .from("strava_activities")
     .select("*", { count: "exact" })
-    .eq("connection_key", CONNECTION_KEY);
+    .eq("connection_key", connectionKey);
 
   if (filters.sportTypes && filters.sportTypes.length > 0) {
     q = q.in("sport_type", filters.sportTypes);
@@ -185,11 +185,12 @@ export async function queryActivities(
 }
 
 export async function getDistinctSportTypes(): Promise<string[]> {
+  const connectionKey = await getConnectionKey();
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
     .from("strava_activities")
     .select("sport_type")
-    .eq("connection_key", CONNECTION_KEY);
+    .eq("connection_key", connectionKey);
   if (error) throw new Error(`Failed to read sport types: ${error.message}`);
   const set = new Set<string>();
   for (const row of data ?? []) {

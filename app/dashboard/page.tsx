@@ -25,8 +25,8 @@ import { readTokens } from "@/lib/strava/tokens";
 import { getServiceRoleClient } from "@/lib/supabase";
 import { formatCount, formatHours, unitsFor } from "@/lib/units/format";
 import { getUnitSystem } from "@/lib/units/preference";
+import { getConnectionKey } from "@/lib/visitor";
 
-const CONNECTION_KEY = "default";
 const CACHE_CAP = 1000;
 
 export const runtime = "nodejs";
@@ -37,11 +37,12 @@ interface PageProps {
 }
 
 async function readAllRows(): Promise<{ rows: ActivityRow[]; error: string | null }> {
+  const connectionKey = await getConnectionKey();
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
     .from("strava_activities")
     .select("*")
-    .eq("connection_key", CONNECTION_KEY)
+    .eq("connection_key", connectionKey)
     .order("start_date_local", { ascending: false });
   if (error) return { rows: [], error: error.message };
   return { rows: (data ?? []) as ActivityRow[], error: null };

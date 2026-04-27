@@ -3,8 +3,8 @@ import "server-only";
 import { getConfig } from "../config";
 import { trackSecret } from "../log";
 import { getServiceRoleClient } from "../supabase";
+import { getConnectionKey } from "../visitor";
 
-const CONNECTION_KEY = "default";
 const REFRESH_MARGIN_SECONDS = 60;
 const TOKEN_URL = "https://www.strava.com/oauth/token";
 
@@ -35,11 +35,12 @@ function rowToTokenSet(row: TokenRow): TokenSet {
 }
 
 export async function readTokens(): Promise<TokenSet | null> {
+  const connectionKey = await getConnectionKey();
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
     .from("strava_tokens")
     .select("connection_key, access_token, refresh_token, expires_at, athlete_id")
-    .eq("connection_key", CONNECTION_KEY)
+    .eq("connection_key", connectionKey)
     .maybeSingle();
   if (error) throw new Error(`Failed to read strava_tokens: ${error.message}`);
   if (!data) return null;
@@ -49,10 +50,11 @@ export async function readTokens(): Promise<TokenSet | null> {
 export async function writeTokens(tokens: TokenSet): Promise<void> {
   trackSecret(tokens.access_token);
   trackSecret(tokens.refresh_token);
+  const connectionKey = await getConnectionKey();
   const supabase = getServiceRoleClient();
   const { error } = await supabase.from("strava_tokens").upsert(
     {
-      connection_key: CONNECTION_KEY,
+      connection_key: connectionKey,
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,
       expires_at: new Date(tokens.expires_at * 1000).toISOString(),

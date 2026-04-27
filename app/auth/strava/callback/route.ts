@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { logError } from "@/lib/log";
 import { consumeState } from "@/lib/strava/state";
 import { exchangeCodeForTokens, writeTokens } from "@/lib/strava/tokens";
+import { VISITOR_COOKIE_NAME, verifyVisitorCookie } from "@/lib/visitor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +25,15 @@ function htmlResponse(status: number, title: string, body: string): NextResponse
 }
 
 export async function GET(request: NextRequest) {
+  const visitorCookie = request.cookies.get(VISITOR_COOKIE_NAME)?.value;
+  if (!verifyVisitorCookie(visitorCookie)) {
+    return htmlResponse(
+      400,
+      "Strava — Session Lost",
+      `<h1 class="err">Session lost</h1><p>Your browser session was lost mid-connection (cookies may have been cleared). No account was connected.</p><p><a href="/auth/strava">Try again</a></p>`,
+    );
+  }
+
   const { searchParams } = request.nextUrl;
   const code = searchParams.get("code");
   const state = searchParams.get("state");

@@ -8,6 +8,7 @@ export interface Config {
   stravaRedirectUri: string;
   supabaseUrl: string;
   supabaseServiceRoleKey: string;
+  visitorCookieSecret: string;
 }
 
 let cached: Config | null = null;
@@ -21,6 +22,7 @@ export function getConfig(): Config {
     "STRAVA_REDIRECT_URI",
     "SUPABASE_URL",
     "SUPABASE_SERVICE_ROLE_KEY",
+    "VISITOR_COOKIE_SECRET",
   ];
   const missing = required.filter((key) => !process.env[key]);
   if (missing.length > 0) {
@@ -32,6 +34,7 @@ export function getConfig(): Config {
 
   trackSecret(process.env.STRAVA_CLIENT_SECRET);
   trackSecret(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  trackSecret(process.env.VISITOR_COOKIE_SECRET);
 
   cached = {
     stravaClientId: process.env.STRAVA_CLIENT_ID!,
@@ -39,6 +42,7 @@ export function getConfig(): Config {
     stravaRedirectUri: process.env.STRAVA_REDIRECT_URI!,
     supabaseUrl: process.env.SUPABASE_URL!,
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    visitorCookieSecret: process.env.VISITOR_COOKIE_SECRET!,
   };
   return cached;
 }
